@@ -30,7 +30,7 @@
         margin-top: 20px;
       }
 
-      .plyr__video-wrapper .plyr-download-button{
+      .plyr__video-wrapper .plyr-download-button {
         position: absolute;
         top: 10px;
         left: 10px;
@@ -44,15 +44,7 @@
         z-index: 10;
       }
 
-      .plyr__volume {
-        max-width: initial;
-        min-width: initial;
-        width: auto;
-        position: relative;
-      }
-
-
-      .plyr__video-wrapper .plyr-share-button{
+      .plyr__video-wrapper .plyr-share-button {
         position: absolute;
         top: 50px;
         left: 10px;
@@ -67,7 +59,7 @@
       }
 
       .plyr__video-wrapper .plyr-download-button:hover,
-      .plyr__video-wrapper .plyr-share-button:hover{
+      .plyr__video-wrapper .plyr-share-button:hover {
         background-color: rgba(255, 255, 255, 0.7);
         color: black;
       }
@@ -87,15 +79,17 @@
       .plyr, .plyr__video-wrapper, .plyr__video-embed iframe {
         height: 100%;
       }
-
     </style>
   </head>
 
   <body>
-    <video id="stream-media" controls preload="auto">
+    <video id="stream-media" controls preload="auto" crossorigin="anonymous">
       <source src="" type="">
+      <!-- Add audio track sources -->
+      <track kind="captions" label="English" srclang="en" src="subtitles_en.vtt" default>
+      <track kind="captions" label="Spanish" srclang="es" src="subtitles_es.vtt">
       <p class="vjs-no-js">
-        To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video
+        To view this video please enable JavaScript, and consider upgrading to a web browser that supports HTML5 video.
       </p>
     </video>
 
@@ -103,52 +97,74 @@
 
     <script>
       var player = new Plyr('#stream-media', {
-          controls:['play-large', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'mute', 'settings', 'pip', 'fullscreen'],
-          settings:['speed','loop'],
-          speed:{selected:1,options:[0.25,0.5,0.75,1,1.25,1.5,1.75,2]},
-          seek: 10,
-          keyboard: { focused: true, global: true },
+        controls: ['play-large', 'rewind', 'play', 'fast-forward', 'progress', 'current-time', 'mute', 'settings', 'pip', 'fullscreen', 'captions'],
+        settings: ['speed', 'loop', 'quality', 'captions'],
+        speed: { selected: 1, options: [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] },
+        seek: 10,
+        keyboard: { focused: true, global: true },
+        captions: { active: true, update: true, language: 'en' }
       });
 
       var mediaLink = "{{ mediaLink }}";
+      var audioTracks = [
+        { src: 'audio1.mp3', type: 'audio/mpeg', label: 'Audio 1' },
+        { src: 'audio2.mp3', type: 'audio/mpeg', label: 'Audio 2' }
+      ];
 
       if (mediaLink) {
-          document.querySelector('#stream-media source').setAttribute('src', mediaLink);
+        // Set main media source
+        document.querySelector('#stream-media source').setAttribute('src', mediaLink);
+        player.restart();
+
+        // Audio track changer
+        var audioChanger = document.createElement('select');
+        audioChanger.className = 'plyr-audio-changer';
+        audioChanger.onchange = function() {
+          var selectedAudio = audioChanger.value;
+          document.querySelector('#stream-media source').setAttribute('src', selectedAudio);
           player.restart();
+          player.play();
+        };
 
-          var downloadButton = document.createElement('div');
-          downloadButton.className = 'plyr-download-button';
+        audioTracks.forEach(function(track) {
+          var option = document.createElement('option');
+          option.value = track.src;
+          option.textContent = track.label;
+          audioChanger.appendChild(option);
+        });
 
-          downloadButton.onclick = function() {
-            event.stopPropagation();
-            var link = document.createElement('a');
-            link.href = mediaLink;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-          };
+        player.elements.container.querySelector('.plyr__controls').appendChild(audioChanger);
 
-          player.elements.container.querySelector('.plyr__video-wrapper').appendChild(downloadButton);
+        // Download and share buttons
+        var downloadButton = document.createElement('div');
+        downloadButton.className = 'plyr-download-button';
+        downloadButton.onclick = function() {
+          event.stopPropagation();
+          var link = document.createElement('a');
+          link.href = mediaLink;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        };
 
-          var shareButton = document.createElement('div');
-          shareButton.className = 'plyr-share-button';
+        player.elements.container.querySelector('.plyr__video-wrapper').appendChild(downloadButton);
 
-          shareButton.onclick = function() {
-            event.stopPropagation();
-            if (navigator.share) {
-              navigator.share({
-                title: "Play",
-                url: mediaLink
-              });
-            }
-          };
+        var shareButton = document.createElement('div');
+        shareButton.className = 'plyr-share-button';
+        shareButton.onclick = function() {
+          event.stopPropagation();
+          if (navigator.share) {
+            navigator.share({
+              title: 'Play',
+              url: mediaLink
+            });
+          }
+        };
 
-          player.elements.container.querySelector('.plyr__video-wrapper').appendChild(shareButton);
-
+        player.elements.container.querySelector('.plyr__video-wrapper').appendChild(shareButton);
       } else {
-          document.getElementById('error-message').textContent = 'Error: Media URL not provided';
+        document.getElementById('error-message').textContent = 'Error: Media URL not provided';
       }
     </script>
-
   </body>
 </html>
